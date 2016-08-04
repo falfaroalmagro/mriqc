@@ -1,0 +1,52 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptName=`basename "$0"`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+result="NaN NaN NaN NaN NaN NaN NaN NaN NaN" 
+
+if [ -f $baseT1/T1_brain_mask.nii.gz ] ; then
+
+    if [ -f $baseT1/T1_fast/T1_brain_pve_0.nii.gz ] ; then
+
+        fslmaths $baseT1/T1_brain_mask.nii.gz -thr 0.5 -bin $baseT1/grot0.nii.gz
+        fslmaths $baseT1/grot0.nii.gz -ero $baseT1/grot1.nii.gz
+        fslmaths $baseT1/T1_brain_mask.nii.gz -thr 0.5 -bin -sub $baseT1/grot1.nii.gz $baseT1/grot2
+        
+        fslmaths $baseT1/T1_fast/T1_brain_pve_0.nii.gz -thr 0.5 -bin $baseT1/grot_T1_CSF.nii.gz
+        fslmaths $baseT1/T1_fast/T1_brain_pve_1.nii.gz -thr 0.5 -bin $baseT1/grot_T1_GM.nii.gz
+        fslmaths $baseT1/T1_fast/T1_brain_pve_2.nii.gz -thr 0.5 -bin $baseT1/grot_T1_WM.nii.gz
+
+        fslmaths $baseT1/grot2.nii.gz -mul $baseT1/grot_T1_CSF.nii.gz $baseT1/grot_CSF 
+        fslmaths $baseT1/grot2.nii.gz -mul $baseT1/grot_T1_GM.nii.gz $baseT1/grot_GM 
+        fslmaths $baseT1/grot2.nii.gz -mul $baseT1/grot_T1_WM.nii.gz $baseT1/grot_WM 
+
+        volCSF=`fslstats $baseT1/grot_CSF.nii.gz -V | awk '{print $1}'`
+        volGM=`fslstats $baseT1/grot_GM.nii.gz -V | awk '{print $1}'`
+        volWM=`fslstats $baseT1/grot_WM.nii.gz -V | awk '{print $1}'`
+        volBrain=`fslstats $baseT1/grot0.nii.gz -V | awk '{print $1}'`
+        volGrot=`fslstats $baseT1/grot2.nii.gz -V | awk '{print $1}'`
+
+        result="$volCSF $volGM $volWM `echo $volCSF / $volBrain | bc -l` `echo $volGM / $volBrain | bc -l` `echo $volWM / $volBrain | bc -l` `echo $volCSF / $volGrot | bc -l` `echo $volGM / $volGrot | bc -l` `echo $volWM / $volGrot | bc -l`" 
+
+        rm -r $baseT1/grot*
+    fi
+fi
+
+
+mkdir -p QC_files
+
+echo $result > QC_files/T1/$scriptName.txt
+    
+cd $origDir

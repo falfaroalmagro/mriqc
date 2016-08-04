@@ -1,0 +1,17 @@
+#!/bin/sh
+
+T1file=$1
+T1unbiased=$2
+T1_WM=$3
+
+flmaths ${T1_WM} -thr 0.5 -bin grot_norm_WM
+fslmaths grot_norm_WM -mul $T1unbiased grot_norm_WM_unbiased
+median=`fslstats grot_norm_WM_unbiased -P 50`
+
+if [ "$4" == "" ] ; then
+	fslmaths $T1file -div $median $4
+else
+	echo $median	
+fi
+
+rm grot_norm_*

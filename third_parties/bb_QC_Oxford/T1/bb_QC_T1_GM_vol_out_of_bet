@@ -1,0 +1,33 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptName=`basename "$0"`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+result="NaN" 
+if [ -f $baseT1/T1.nii.gz ] ; then 
+
+    fslmaths $baseT1/T1_fast/T1_brain_pve_1.nii.gz -thr 0.5 -bin $baseT1/grot2_T1_GM.nii.gz
+    fslmaths $baseT1/T1_brain_mask.nii.gz -binv -mul $baseT1/grot2_T1_GM.nii.gz -bin $baseT1/grot2_T1_final.nii.gz
+    result=`fslstats $baseT1/grot2_T1_final.nii.gz -V | awk '{print $1}'`
+
+    rm -r $baseT1/grot2*
+fi
+
+mkdir -p QC_files
+
+echo $result > QC_files/T1/$scriptName.txt
+    
+cd $origDir
+
+

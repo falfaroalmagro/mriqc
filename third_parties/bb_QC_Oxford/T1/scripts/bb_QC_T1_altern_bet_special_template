@@ -1,0 +1,29 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+if [ -f QC_files/T1/QC_be/T1_not_defaced.nii.gz ] ; then
+
+    if [ ! -f QC_files/T1/QC_be/T1_brain_mask_special_template.nii.gz ] ; then
+        flirt -in QC_files/T1/QC_be/T1_not_defaced.nii.gz -ref $scriptDir/scripts/special_template.nii.gz -omat $baseT1/grot_reg_1.mat
+        fnirt --in=QC_files/T1/QC_be/T1_not_defaced.nii.gz --ref=$scriptDir/scripts/special_template.nii.gz --aff=$baseT1/grot_reg_1.mat --fout=$baseT1/grot_reg_1_warp --interp=spline
+        invwarp -w $baseT1/grot_reg_1_warp -o $baseT1/grot_reg_1_invwarp -r QC_files/T1/QC_be/T1_not_defaced.nii.gz
+        applywarp -i $scriptDir/scripts/special_template_brain_mask.nii.gz -o $baseT1/grot_reg_1_brain_mask.nii.gz -r QC_files/T1/QC_be/T1_not_defaced.nii.gz -w $baseT1/grot_reg_1_invwarp
+        fslmaths $baseT1/grot_reg_1_brain_mask.nii.gz -thr 0.5 -bin QC_files/T1/QC_be/T1_brain_mask_special_template.nii.gz
+    fi
+fi
+
+rm $baseT1/grot*
+cd $origDir

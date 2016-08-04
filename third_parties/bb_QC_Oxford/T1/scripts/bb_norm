@@ -1,0 +1,4 @@
+#!/bin/sh
+
+median=`fslstats $1 -P 50`
+fslmaths $1 -div $median $2 

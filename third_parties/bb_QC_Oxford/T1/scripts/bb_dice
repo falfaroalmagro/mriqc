@@ -1,0 +1,13 @@
+#!/bin/sh
+
+fslmaths $1 -add $2 grot_sum
+fslmaths grot_sum -thr 2 -bin grot_intersect
+fslmaths grot_sum -bin grot_union
+
+volIntersect=`fslstats grot_intersect -V | awk '{print $1}'`
+volMaths=`fslstats grot_union -V | awk '{print $1}'`
+
+imrm grot_sum grot_intersect grot_union
+
+echo `echo "(2 * $volIntersect) / $volMaths" | bc -l`
+

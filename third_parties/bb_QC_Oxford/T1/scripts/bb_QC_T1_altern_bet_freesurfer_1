@@ -1,0 +1,35 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+if [ -f QC_files/T1/QC_be/T1_not_defaced.nii.gz ] ; then
+
+    # First result
+    if [ ! -f QC_files/T1/QC_be/T1_brain_mask_freesurfer_1.nii.gz ] ; then
+        mri_watershed -atlas QC_files/T1/QC_be/T1_not_defaced.nii.gz $baseT1/grot_FS_mask_1.nii.gz  >/dev/null
+
+        #Try different parameters if the default configuration failed
+        if [ ! -f $baseT1/grot_FS_mask_1.nii.gz ] ; then 
+            mri_watershed -h 20 -atlas QC_files/T1/QC_be/T1_not_defaced.nii.gz $baseT1/grot_FS_mask_1.nii.gz >/dev/null
+            
+            if [ ! -f $baseT1/grot_FS_mask_1.nii.gz ] ; then 
+                mri_watershed -h 10 -atlas QC_files/T1/QC_be/T1_not_defaced.nii.gz $baseT1/grot_FS_mask_1.nii.gz >/dev/null
+            fi 
+        fi 
+        fslmaths $baseT1/grot_FS_mask_1.nii.gz -thr 0.5 -bin QC_files/T1/QC_be/T1_brain_mask_freesurfer_1.nii.gz
+    fi
+ 
+fi
+
+rm $baseT1/grot*.*
+cd $origDir

@@ -1,0 +1,48 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+dirSubject=`pwd`/$1
+
+modality=$2
+
+featureName=$3
+
+if [[ "$dirSubject" == "" ]] ; then
+    echo "Error: The selected subject does not exist"
+    exit 0
+fi
+
+mkdir -p $dirSubject/QC_files/$modality
+
+
+result=""
+
+if [ ! -d $dirScript/$modality ] ; then
+    echo "Error: The selected modality does not exist"
+    exit 0
+else
+
+    featInfo=`cat $dirScript/$modality/list.txt | grep $featureName`
+
+    if [ "$featInfo" == "" ] ; then
+      echo "Error: The feature $featureName does not exist for modality $modality"
+      exit 0
+    else
+      script=`echo $featInfo | awk '{print $3}'`
+      numFeature=`echo $featInfo | awk '{print $4}'`
+
+      if [ ! -f $dirSubject/QC_files/$modality/$script.txt ] ; then
+           $dirScript/$modality/$script $1       
+      fi
+      
+      result=`cat $dirSubject/QC_files/$modality/$script.txt | awk -v colNum=$numFeature '{print $colNum}'`
+
+    fi
+fi
+
+echo $result
+exit 1
+

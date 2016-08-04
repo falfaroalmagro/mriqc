@@ -1,0 +1,25 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+if [ -f QC_files/T1/QC_be/T1_not_defaced.nii.gz ] ; then
+
+    if [ ! -f QC_files/T1/QC_be/T1_brain_mask_steve.nii.gz ] ; then
+        convert_xfm -omat $baseT1/grot_MNI_to_T1_linear.mat -inverse $baseT1/transforms/T1_to_MNI_linear.mat
+        flirt -in $FSLDIR/data/standard/MNI152_T1_1mm_brain_mask.nii.gz -ref $baseT1/T1_brain_mask.nii.gz -applyxfm -init $baseT1/grot_MNI_to_T1_linear.mat -out QC_files/T1/QC_be/T1_brain_mask_steve.nii.gz
+        fslmaths QC_files/T1/QC_be/T1_brain_mask_steve.nii.gz -thr 0.5 -bin QC_files/T1/QC_be/T1_brain_mask_steve.nii.gz
+    fi
+fi
+
+rm $baseT1/grot*
+cd $origDir

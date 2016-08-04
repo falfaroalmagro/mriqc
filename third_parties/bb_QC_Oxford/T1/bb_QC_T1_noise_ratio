@@ -1,0 +1,38 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptName=`basename "$0"`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+result="NaN NaN" 
+
+if [ -f $baseT1/T1_fast/T1_brain_pveseg.nii.gz ] ; then
+  fslmaths $baseT1/T1_fast/T1_brain_pveseg -thr 2 -uthr 2 -ero tmpsnr
+  TheGrey=`fslstats $baseT1/T1 -k tmpsnr -m`
+  fslmaths $baseT1/T1_fast/T1_brain_pveseg -thr 3 -uthr 3 -ero tmpsnr
+  TheWhite=`fslstats $baseT1/T1 -k tmpsnr -m`
+  imrm tmpsnr
+  TheBrain=`echo "1 k $TheGrey $TheWhite + 2 / p" | dc -`
+  TheContrast=`echo "1 k $TheWhite $TheGrey - p" | dc -`
+  TheThresh=`echo "$TheBrain 10 / p" | dc -`
+  TheNoise=`fslstats $baseT1/T1 -l 0.001 -u $TheThresh -s`
+  TheSNRrecip=`echo "10 k $TheNoise $TheBrain    / p" | dc -`
+  TheCNRrecip=`echo "10 k $TheNoise $TheContrast / p" | dc -`
+  result="$TheSNRrecip $TheCNRrecip" 
+fi
+
+mkdir -p QC_files
+
+echo $result > QC_files/T1/$scriptName.txt
+    
+cd $origDir

@@ -1,0 +1,57 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptName=`basename "$0"`
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ "$dirScript" == "." ] ; then
+    dirScript=`pwd`
+fi
+
+bet_ways=`cat $dirScript/list.txt | grep _altern_bet_ | grep -v _combination`
+
+direc=$1
+
+cd $direc
+
+arr=""
+
+for elem in $bet_ways ; do
+    val=`$dirScript/../bb_QC_feature $1 T1 $elem`
+    if [ "$val" != "NaN" ] ; then
+        if [ "$arr" == "" ] ; then
+            arr="$val"
+        else
+            arr="$arr, $val"
+        fi
+    fi
+done
+
+if [ "$arr" == "" ] ; then
+    mean="NaN"
+    median="NaN"
+    p2="NaN"
+    p25="NaN"
+    p75="NaN"
+    p98="NaN"
+
+else
+    mean=`python -c "import numpy as np;a=np.array([$arr]);print(np.mean(a))"`
+    median=`python -c "import numpy as np;a=np.array([$arr]);print(np.median(a))"`
+    p2=`python -c "import numpy as np;a=np.array([$arr]);print(np.percentile(a,2))"`
+    p25=`python -c "import numpy as np;a=np.array([$arr]);print(np.percentile(a,25))"`
+    p75=`python -c "import numpy as np;a=np.array([$arr]);print(np.percentile(a,75))"`
+    p98=`python -c "import numpy as np;a=np.array([$arr]);print(np.percentile(a,98))"`
+fi
+
+result="$mean $median $p2 $p25 $p75 $p98"
+
+mkdir -p QC_files
+
+echo "$result" > QC_files/$scriptName.txt
+    
+cd $origDir
+
+

@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -x
+
+origDir=`pwd`
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#scriptDir=`which $0 | dirname `
+
+dirSubject=$2
+
+if [[ "$dirSubject" == "" ]] ; then
+    echo "Error: The selected subject does not exist"
+    exit 0
+fi
+
+
+echo $dirSubject
+echo $3
+echo 'PATATA'
+mkdir $dirSubject/T1
+ln -s $3 $dirSubject/T1/T1.nii.gz
+$FSLDIR/bin/bet $dirSubject/T1/T1.nii.gz $dirSubject/T1/T1_brain.nii.gz -m -R
+mkdir dirSubject/T1/T1_fast
+fast -b -o $dirSubject/T1/T1_fast/T1_brain $dirSubject/T1/T1_brain
+
+mkdir -p $dirSubject/QC_files/$1
+
+if [ ! -d $dirScript/$1 ] ; then
+    echo "Error: The selected modality does not exist"
+    exit 0
+else
+    for elem in `cat $scriptDir/$1/list.txt | awk '{print $3}' | uniq` ; do
+        $scriptDir/$1/$elem $dirSubject
+    done
+fi
+
+echo $result
+

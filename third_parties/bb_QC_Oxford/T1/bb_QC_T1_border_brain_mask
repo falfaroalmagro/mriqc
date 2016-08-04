@@ -1,0 +1,61 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+scriptName=`basename "$0"`
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+medWM=`$scriptDir/scripts/bb_norm_T1_WM $baseT1/T1.nii.gz $baseT1/T1_unbiased.nii.gz $baseT1/T1_fast/T1_brain_pve_2.nii.gz`
+
+result1="NaN NaN NaN" 
+result2="NaN NaN NaN" 
+result3="NaN NaN NaN" 
+result4="NaN NaN NaN" 
+
+if [ -f $baseT1/T1_brain_mask.nii.gz ] ; then 
+
+    if [ ! -f $baseT1/QC_T1_files/QC_be/T1_brain_mask.nii.gz ] ; then
+        mkdir -p $baseT1/QC_T1_files/QC_be/
+        fslmaths $baseT1/T1_brain_mask.nii.gz -thr 0.5 -bin $baseT1/QC_T1_files/QC_be/T1_brain_mask.nii.gz
+    fi
+
+    fslmaths $baseT1/QC_T1_files/QC_be/T1_brain_mask.nii.gz -dilM -sub $baseT1/QC_T1_files/QC_be/T1_brain_mask.nii.gz -mul $baseT1/QC_T1_files/QC_be/T1_not_defaced.nii.gz -abs $baseT1/gret_ext_strip_T1_brain_mask.nii.gz
+    fslmaths $baseT1/QC_T1_files/QC_be/T1_brain_mask.nii.gz -ero -sub $baseT1/QC_T1_files/QC_be/T1_brain_mask.nii.gz -abs -mul $baseT1/QC_T1_files/QC_be/T1_not_defaced.nii.gz -abs $baseT1/gret_int_strip_T1_brain_mask.nii.gz
+    dimZ=`echo "(\`fslval $baseT1/QC_T1_files/QC_be/T1_not_defaced.nii.gz dim3\` / 2 ) -20 " | bc `
+    fslroi $baseT1/gret_ext_strip_T1_brain_mask.nii.gz     $baseT1/gret_roi_ext_strip_T1_brain_mask.nii.gz   0 -1 0 -1 $dimZ -1
+    fslroi $baseT1/gret_int_strip_T1_brain_mask.nii.gz   $baseT1/gret_roi_int_strip_T1_brain_mask.nii.gz 0 -1 0 -1 $dimZ -1
+
+    result1=`fslstats  $baseT1/gret_ext_strip_T1_brain_mask.nii.gz -M -P 50 -P 95`
+    result2=`fslstats  $baseT1/gret_int_strip_T1_brain_mask.nii.gz -M -P 50 -P 95`
+    result3=`fslstats  $baseT1/gret_roi_ext_strip_T1_brain_mask.nii.gz -M -P 50 -P 95`
+    result4=`fslstats  $baseT1/gret_roi_int_strip_T1_brain_mask.nii.gz -M -P 50 -P 95`
+        
+
+    result_orig="$result1 $result2 $result3 $result4"
+    result=""
+fi
+
+
+for elem in $result_orig ; do
+    if [ "$elem" == "NaN" ] ; then
+        result="$result NaN"
+    else
+        result="$result `echo $elem / $medWM | bc -l | awk '{print substr($1,0,7)}'`"
+    fi
+done
+
+mkdir -p QC_files
+
+echo $result > QC_files/T1/$scriptName.txt
+    
+cd $origDir

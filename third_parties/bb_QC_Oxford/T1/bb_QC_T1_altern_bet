@@ -1,0 +1,49 @@
+#!/bin/sh
+
+set -x
+
+origDir=`pwd`
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+scriptName=`basename "$0"`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+bet_methods=("special_template" "freesurfer_1" "freesurfer_2" "FSL_T1" "steve" "majority")
+numMethods=`echo ${#bet_methods[@]}`
+rangeM=`echo $numMethods -1 |bc`
+
+result_arr=()
+for i in $(seq 0 $rangeM) ; do 
+    result_arr+=("NaN")
+done
+
+
+if [ ! -f QC_files/T1/QC_be/T1_brain_mask.nii.gz ] ; then
+	mkdir -p QC_files/T1/QC_be/
+    fslmaths $baseT1/T1_brain_mask.nii.gz -thr 0.5 -bin QC_files/T1/QC_be/T1_brain_mask.nii.gz
+fi
+
+if [ ! -f QC_files/T1/QC_be/T1_not_defaced.nii.gz ] ; then
+	cp $baseT1/T1.nii.gz QC_files/T1/QC_be/T1_not_defaced.nii.gz
+fi
+
+for i in $(seq 0 $rangeM) ; do
+    $scriptDir/scripts/bb_QC_T1_altern_bet_${bet_methods[$i]} $1
+
+    if [ -f QC_files/T1/QC_be/T1_brain_mask_${bet_methods[$i]}.nii.gz ] ; then
+    	result_arr[$i]=`$scriptDir/scripts/bb_dice $baseT1/T1_brain_mask.nii.gz QC_files/T1/QC_be/T1_brain_mask_${bet_methods[$i].nii.gz}`
+    fi
+done 
+
+rm -r $baseT1/grot*
+
+mkdir -p QC_files
+
+echo ${result_arr[@]} > QC_files/T1/$scriptName.txt
+    
+cd $origDir

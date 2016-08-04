@@ -1,0 +1,29 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+direc=`bb_get_phase $1 2`
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+########
+# CODE #
+########
+
+
+
+
+
+#########
+# /CODE #
+#########
+
+cd $origDir
+
+echo $A 

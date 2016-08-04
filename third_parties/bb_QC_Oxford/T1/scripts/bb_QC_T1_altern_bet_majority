@@ -1,0 +1,44 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+if [ -f QC_files/T1/QC_be/T1_not_defaced.nii.gz ] ; then
+
+    if [ ! -f QC_files/T1/QC_be/T1_brain_mask_majority.nii.gz ] ; then
+        fils=`ls QC_files/T1/QC_be/T1_brain_mask_*gz`
+        numFils=`echo $fils | wc |awk '{print $2}'`
+        
+        if [ "$numFils" == "9" ] ; then
+            majority="7"
+        elif [ "$numFils" == "8" ] ; then
+            majority="6"
+        elif [ "$numFils" == "7" ] ; then
+            majority="6"
+        elif [ "$numFils" -gt "9" ] ; then
+            majority=`echo $numFils -2 | bc`
+        else 
+            majority=$numFils
+        fi
+
+        cad=
+        for elem in $fils; do
+            cad="$cad -add $elem"
+        done
+
+        cad=`echo $cad | awk '{$1=""; print $0}'`
+        fslmaths $cad -thr $majority -bin QC_files/T1/QC_be/T1_brain_mask_majority.nii.gz
+    fi
+fi
+
+rm $baseT1/grot*
+cd $origDir

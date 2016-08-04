@@ -1,0 +1,25 @@
+#!/bin/sh
+
+origDir=`pwd`
+
+direc=$1
+
+cd $direc
+
+baseT1="T1"
+
+if [ -d T1/unusable ] ; then
+    baseT1="T1/unusable"
+fi
+
+
+if [ -f QC_files/T1/QC_be/T1_not_defaced.nii.gz ] ; then
+
+    if [ ! -f QC_files/T1/QC_be/T1_brain_mask_FSL_T1.nii.gz ] ; then
+        bet QC_files/T1/QC_be/T1_not_defaced.nii.gz $baseT1/grot_bet_brain -m -R
+        mv $baseT1/grot_bet_brain_mask.nii.gz QC_files/T1/QC_be/T1_brain_mask_FSL_T1.nii.gz
+    fi
+fi
+
+rm $baseT1/grot*
+cd $origDir
